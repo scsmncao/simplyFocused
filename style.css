@@ -1,0 +1,12 @@
+#popup {
+	height: 500pt;
+	width: 500pt;
+}
+
+body .container {
+	font-family: arial;
+	font-size: 13pt;
+	padding-left: 10pt;
+	padding-right: 10pt;
+	padding-bottom: 10pt;
+}

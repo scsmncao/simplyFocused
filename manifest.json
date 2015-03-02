@@ -1,0 +1,21 @@
+{
+  "manifest_version": 2,
+
+  "name": "SimplyFocused",
+  "description": "This extension will stop procrastination.",
+  "version": "1.0",
+  "options_page": "options.html",
+
+  "browser_action": {
+    "default_icon": "icon.png",
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "webRequest",
+    "webRequestBlocking",
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": ["background.js"]
+  }
+}

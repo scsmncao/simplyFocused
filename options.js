@@ -1,23 +1,43 @@
-var arrayOfPredefinedSites = ["Facebook", "Twitch", "Twitter", "Tumblr", "YouTube", "Pinterest", "Instagram", "Buzzfeed"];
+var arrayOfPredefinedSites = ["facebook", "amazon", "twitter", "tumblr", "youtube", "pinterest", "instagram", "buzzfeed"];
+var currentlyAdded = [];
+var saved = false;
 
 // this will initially load the options everytime the options is open
 function loadOptions() {
+
+	var currentlyBlocked = JSON.parse(localStorage.getItem("simpleBlocked"));
+
+	if (currentlyBlocked.length == 0) {
+		return
+	}
+
+	if (JSON.parse(localStorage.getItem("started")) == "true") {
+		document.getElementById('delete').disabled = true;
+		document.getElementById('clear').disabled = true;
+		document.getElementById('durationHours').disabled = true;
+	}
 	// for every check box site, see if it's intialized first and then get true or false depending on localStorage
-	for (i = 0; i < arrayOfPredefinedSites.length; i++) {
-		element = arrayOfPredefinedSites[i]
-		// we have to initialize the localStorage on first startup
-		if (localStorage.getItem(element) == null) {
-			localStorage[element] = "false";
-		}
-		// if the localStorage value for the site is true, check the box and disable it
-		if (localStorage.getItem(element) == "true") {
+	for (i = 0; i < currentlyBlocked.length; i++) {
+		element = currentlyBlocked[i];
+		indexOfSuffix = element.indexOf(".com");
+		if (arrayOfPredefinedSites.indexOf(element.substring(0, indexOfSuffix)) > -1) {
+			console.log(element.substring(0, indexOfSuffix));
+			// enable the checkbox and uncheck the box
 			var option = document.createElement("option");
 	 		option.text = element;
 	 		selector.add(option);
-	 		document.getElementById(element.toLowerCase()).checked = true;
-	 		document.getElementById(element.toLowerCase()).disabled = true;
+			document.getElementById(element).checked = true;
+	 		document.getElementById(element).disabled = true;
+		}
+		// if the localStorage value for the site is true, check the box and disable it
+		else {
+			var option = document.createElement("option");
+	 		option.text = element;
+	 		selector.add(option);
 		}
 	}
+
+	document.getElementById('durationHours').value = (JSON.parse(localStorage.getItem("seconds")) / 3600).toPrecision(1);
 }
 
 //add a listener for when the options is loaded so we can inialize it
@@ -36,27 +56,23 @@ function addSites(){
 		// the current element that we're on in the loop of arrayOfPredefinedSites
 		var element = arrayOfPredefinedSites[i];
 
-		// get the checkbox element
-		var site = document.getElementById(element.toLowerCase());
+		var elementWithSuffix = element + ".com"
 
-		// get the element from storage
-		var elementInStorage = localStorage.getItem(element);
+		// get the checkbox element
+		var site = document.getElementById(elementWithSuffix);
 
 		// if the element in the storage is not true and if the site is checked, create a new option for the selector
 		// and set the option to true
-		if (site.checked && elementInStorage != "true") {
+		if (site.checked && (localStorage.getItem("simpleBlocked").indexOf(elementWithSuffix) == -1 && currentlyAdded.indexOf(elementWithSuffix) == -1)) {
 	 		var option = document.createElement("option");
-	 		option.text = element;
+	 		option.text = elementWithSuffix;
 	 		selector.add(option);
 	 		site.disabled = true;
-	 		localStorage[element] = "true";
-	 		blockedSites = JSON.parse(localStorage.getItem("blocked"));
-	 		//twitter is a little weird, we need to add both twitter.com and www.twitter.com
-	 		if element == "Twitter":
-	 			blockedSites.push("*://" + element.toLowerCase() + ".com/*");
-	 		blockedSites.push("*://www." + element.toLowerCase() + ".com/*");
-	 		localStorage.setItem("blocked", JSON.stringify(blockedSites));
+	 		currentlyAdded.push(elementWithSuffix);
  		}
+	}
+	if (document.getElementById("urlText").value != "") {
+		addURL(document.getElementById("urlText").value);
 	}
 }
 
@@ -65,23 +81,27 @@ function removeSites() {
 
 	// get the value from the selector and set it to false in the storage
 	var selector = document.getElementById("selector");
-	localStorage[selector.value] = "false";
+	// localStorage[selector.value] = "false";
 
-	// enable the checkbox and uncheck the box
-	document.getElementById(selector.value.toLowerCase()).disabled = false;
-	document.getElementById(selector.value.toLowerCase()).checked = false;
-
-	// remove the site from the blocked list in local storage
-	blockedSites = JSON.parse(localStorage.getItem("blocked"));
-	var indexOfSite = blockedSites.indexOf("://www." + selector.value.toLowerCase() + ".com/*");
-	blockedSites.splice(indexOfSite);
-
-	// twitter is a special case and needs to remove twitter.com as well
-	if selector.value == "Twitter":
-	 	indexOfSite = blockedSites.indexOf("*://" + selector.value.toLowerCase() + ".com/*");
-	 	blockedSites.splice(indexOfSite);
-	localStorage.setItem("blocked", JSON.stringify(blockedSites));
+	//check to see if the url being deleted is a preselected one
+	indexOfSuffix = selector.value.indexOf(".com");
+	if (arrayOfPredefinedSites.indexOf(selector.value.substring(0, indexOfSuffix)) > -1) {
+		// enable the checkbox and uncheck the box
+		document.getElementById(selector.value).disabled = false;
+		document.getElementById(selector.value).checked = false;
+	}
+	var simpleBlockSites = JSON.parse(localStorage.getItem("simpleBlocked"));
+	if (simpleBlockSites.indexOf(selector.value) != -1) {
+		var indexOfSite = simpleBlockSites.indexOf(selector.value);
+		simpleBlockSites.splice(indexOfSite, 1);
+		localStorage.setItem("simpleBlocked", JSON.stringify(simpleBlockSites));
+	}
+	else {
+		var indexOfSite = currentlyAdded.indexOf(selector.value);
+		currentlyAdded.splice(indexOfSite, 1);
+	}
 	selector.remove(selector.selectedIndex);
+
 }
 
 // this function will clear all the sites in the selector
@@ -96,28 +116,57 @@ function clearSites() {
 		// get the element in the arrayOfPredefinedSites
 		element = arrayOfPredefinedSites[i]
 
-		// if the localStorage for the site is true, change the storage to false and all the checkboxes
-		if (localStorage.getItem(element) == "true") {
+		document.getElementById(element + ".com").disabled = false;
+		document.getElementById(element + ".com").checked = false;
+	}
+	currentlyAdded = [];
+	selector.options.length = 0;
+	localStorage.setItem("blocked", JSON.stringify([]));
+	localStorage.setItem("simpleBlocked", JSON.stringify([]));
+}
 
-			// sets the storage to false and enables the box and unchecks it
-			localStorage[element] = "false";
-			document.getElementById(element.toLowerCase()).disabled = false;
-			document.getElementById(element.toLowerCase()).checked = false;
-
-			// remove the site from the blocked list in local storage
-			blockedSites = JSON.parse(localStorage.getItem("blocked"));
-			var indexOfSite = blockedSites.indexOf("://www." + selector.value + ".com/*");
-			blockedSites.splice(indexOfSite);
-
-			// special case for tiwtter need to remove twitter.com as well
-			if selector.value == "Twitter":
-			 	indexOfSite = blockedSites.indexOf("*://" + selector.value.toLowerCase() + ".com/*");
-			 	blockedSites.splice(indexOfSite);
-			localStorage.setItem("blocked", JSON.stringify(blockedSites));
+// adds the url given and only accepts urls with a suffix and no www. to make it easier to block
+function addURL(url) {
+	var selector = document.getElementById("selector");
+	if (url.indexOf("www.") == -1) {
+		if (url.indexOf(".") == -1) {
+			alert("Please add a suffix (eg. .com, .net, .org)");
+		}
+		else {
+			var option = document.createElement("option");
+	 		option.text = url;
+	 		selector.add(option);
+			currentlyAdded.push(url);
+			document.getElementById("urlText").value = "";
 		}
 	}
-	// set the selector options to 0
-	selector.options.length = 0;
+	else {
+		alert("Do not put www.");
+	}
+}
+
+//saves the sites to local storage that are in the currentlyAdded array
+function saveSites() {
+	var savedList = []
+	var selector = document.getElementById("selector");
+	var simpleList = []
+	for (i = 0; i < selector.length; i++) {
+		console.log(selector[i].value);
+		savedList.push("*://" + selector[i].value + "/*");
+		savedList.push("*://www." + selector[i].value + "/*");
+		simpleList.push(selector[i].value);
+	}
+	localStorage.setItem("blocked", JSON.stringify(savedList));
+	localStorage.setItem("simpleBlocked", JSON.stringify(simpleList));
+	var durationHours = parseFloat(document.getElementById("durationHours").value);
+	if (durationHours && durationHours > 0) 
+	    localStorage.setItem("seconds", JSON.stringify(parseInt(durationHours * 3600)));
+	saved = true;
+}
+
+window.onbeforeunload = function(e) {
+	if (saved == false)
+		saveSites();
 }
 
 // add a listener for the add button, delete button, and clear button

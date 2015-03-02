@@ -1,6 +1,6 @@
 #popup {
-	height: 500pt;
-	width: 500pt;
+	height: 100pt;
+	width: 115pt;
 }
 
 body .container {
@@ -9,4 +9,10 @@ body .container {
 	padding-left: 10pt;
 	padding-right: 10pt;
 	padding-bottom: 10pt;
+}
+
+.right {
+    text-align: right;
+    float: right;
+    padding-right: 5pt;
 }
